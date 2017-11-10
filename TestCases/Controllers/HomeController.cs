@@ -5,33 +5,82 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using TestCases.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace TestCases.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private TestDBContext db;
+        public HomeController(TestDBContext context)
+        {
+            db = context;
+        }
+        public async Task<IActionResult> Index()
+        {
+            return View(await db.TestCases.ToListAsync());
+        }
+        public IActionResult Create()
         {
             return View();
         }
-
-        public IActionResult About()
+        [HttpPost]
+        public async Task<IActionResult> Create(TestCase testCase)
         {
-            ViewData["Message"] = "Your application description page.";
-
-            return View();
+            db.TestCases.Add(testCase);
+            await db.SaveChangesAsync();
+            return RedirectToAction("Index");
         }
-
-        public IActionResult Contact()
+        public async Task<IActionResult> Details(int? id)
         {
-            ViewData["Message"] = "Your contact page.";
-
-            return View();
+            if (id != null)
+            {
+                TestCase testCase = await db.TestCases.FirstOrDefaultAsync(p => p.Id == id);
+                if (testCase != null)
+                    return View(testCase);
+            }
+            return NotFound();
         }
-
-        public IActionResult Error()
+        public async Task<IActionResult> Edit(int? id)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            if(id != null)
+            {
+                TestCase testCase = await db.TestCases.FirstOrDefaultAsync(p => p.Id == id);
+                if (testCase != null)
+                    return View(testCase);
+            }
+            return NotFound();
+        }
+        [HttpPost]
+        public async Task<IActionResult> Edit(TestCase testCase)
+        {
+            db.TestCases.Update(testCase);
+            await db.SaveChangesAsync();
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        [ActionName("Delete")]
+        public async Task<IActionResult> ConfirmDelete(int? id)
+        {
+            if (id != null)
+            {
+                TestCase testCase = await db.TestCases.FirstOrDefaultAsync(p => p.Id == id);
+                if (testCase != null)
+                    return View(testCase);
+            }
+            return NotFound();
+        }
+        [HttpPost]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id != null)
+            {
+                TestCase testCase = new TestCase { Id = id.Value };
+                db.Entry(testCase).State = EntityState.Deleted;
+                await db.SaveChangesAsync();
+                return RedirectToAction("Index");
+            }
+            return NotFound();
         }
     }
 }
